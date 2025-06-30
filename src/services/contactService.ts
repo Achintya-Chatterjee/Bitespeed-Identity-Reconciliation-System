@@ -4,6 +4,14 @@ import { IdentifyResponse } from "../types/identify";
 const prisma = new PrismaClient();
 
 export class ContactService {
+  /**
+   * Identifies a customer based on email and/or phone number.
+   * It will find existing contacts, merge them if necessary, create new contacts,
+   * and return a consolidated view of the customer's identity.
+   * @param email The email address of the contact.
+   * @param phoneNumber The phone number of the contact.
+   * @returns A promise that resolves to the consolidated contact response.
+   */
   public async identify(
     email: string | null,
     phoneNumber: string | null
@@ -100,6 +108,14 @@ export class ContactService {
     return this.buildResponseFromContacts(allRelatedContacts);
   }
 
+  /**
+   * Finds the primary contact from a list of contacts.
+   * If the list contains a primary contact, it's returned.
+   * Otherwise, it finds the primary contact linked to the first secondary contact in the list.
+   * @param contacts An array of contacts to search through.
+   * @returns A promise that resolves to the primary contact.
+   * @throws Will throw an error if data is inconsistent (e.g., secondary contact with no link).
+   */
   private async getPrimaryContact(contacts: Contact[]): Promise<Contact> {
     let primaryContact = contacts.find((c) => c.linkPrecedence === "primary");
     if (primaryContact) {
@@ -126,6 +142,12 @@ export class ContactService {
     return parentContact;
   }
 
+  /**
+   * Builds the final consolidated contact response object from a list of related contacts.
+   * @param contacts An array of all contacts belonging to a single identity (one primary and its secondaries).
+   * @returns The consolidated contact response.
+   * @throws Will throw an error if the input array is empty.
+   */
   private buildResponseFromContacts(contacts: Contact[]): IdentifyResponse {
     if (contacts.length === 0) {
       // This case should ideally not be hit if called correctly
