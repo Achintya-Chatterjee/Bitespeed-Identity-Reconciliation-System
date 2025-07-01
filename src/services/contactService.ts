@@ -153,7 +153,9 @@ export class ContactService {
 
     const primaryContact =
       contacts.find((c) => c.linkPrecedence === "primary") ||
-      contacts.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0];
+      [...contacts].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      )[0];
 
     const emails = [
       ...new Set(contacts.map((c) => c.email).filter(Boolean)),
