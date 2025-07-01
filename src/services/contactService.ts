@@ -242,41 +242,6 @@ export class ContactService {
       },
     });
   }
-
-  /**
-   * Finds the primary contact from a list of contacts.
-   * If the list contains a primary contact, it's returned.
-   * Otherwise, it finds the primary contact linked to the first secondary contact in the list.
-   * @param contacts An array of contacts to search through.
-   * @returns A promise that resolves to the primary contact.
-   * @throws Will throw an error if data is inconsistent (e.g., secondary contact with no link).
-   */
-  private async getPrimaryContact(contacts: Contact[]): Promise<Contact> {
-    let primaryContact = contacts.find((c) => c.linkPrecedence === "primary");
-    if (primaryContact) {
-      return primaryContact;
-    }
-
-    // All contacts are secondary, find their primary
-    const linkedId = contacts[0].linkedId;
-    if (!linkedId) {
-      // This should not happen in consistent data, but as a fallback:
-      throw new Error(
-        "Data inconsistency: secondary contact without a linkedId"
-      );
-    }
-    const parentContact = await prisma.contact.findUnique({
-      where: { id: linkedId },
-    });
-
-    if (!parentContact) {
-      throw new Error(
-        `Data inconsistency: could not find primary contact with id ${linkedId}`
-      );
-    }
-    return parentContact;
-  }
-
   /**
    * Builds the final consolidated contact response object from a list of related contacts.
    * @param contacts An array of all contacts belonging to a single identity (one primary and its secondaries).

@@ -211,56 +211,6 @@ describe("ContactService", () => {
     });
   });
 
-  describe("getPrimaryContact (private method access for testing)", () => {
-    it("should throw an error if a secondary contact has no linkedId", async () => {
-      const secondaryContactWithoutLink = createMockContact({
-        linkPrecedence: "secondary",
-        linkedId: null,
-      });
-      const service = contactService as any;
-      await expect(
-        service.getPrimaryContact([secondaryContactWithoutLink])
-      ).rejects.toThrow(
-        "Data inconsistency: secondary contact without a linkedId"
-      );
-    });
-
-    it("should throw an error if the linked primary contact is not found", async () => {
-      const secondaryContactWithMissingLink = createMockContact({
-        linkPrecedence: "secondary",
-        linkedId: 12345,
-      });
-      prismaMock.contact.findUnique.mockResolvedValue(null);
-      const service = contactService as any;
-      await expect(
-        service.getPrimaryContact([secondaryContactWithMissingLink])
-      ).rejects.toThrow(
-        "Data inconsistency: could not find primary contact with id 12345"
-      );
-    });
-
-    it("should return the primary contact when a valid secondary contact is provided", async () => {
-      const primaryContact = createMockContact({
-        id: 50,
-        linkPrecedence: "primary",
-      });
-      const secondaryContact = createMockContact({
-        id: 51,
-        linkPrecedence: "secondary",
-        linkedId: 50,
-      });
-      prismaMock.contact.findUnique.mockResolvedValue(primaryContact);
-      const service = contactService as any;
-
-      const result = await service.getPrimaryContact([secondaryContact]);
-
-      expect(result).toBe(primaryContact);
-      expect(prismaMock.contact.findUnique).toHaveBeenCalledWith({
-        where: { id: 50 },
-      });
-    });
-  });
-
   describe("buildResponseFromContacts (private method access for testing)", () => {
     it("should throw an error if called with an empty array", () => {
       const service = contactService as any;

@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../../src/index";
+import { app, server } from "../../src/index";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -16,6 +16,7 @@ describe("POST /identify", () => {
   afterAll(async () => {
     await prisma.contact.deleteMany();
     await prisma.$disconnect();
+    server.close();
   });
 
   describe("successful identification", () => {

@@ -1,8 +1,8 @@
-import express, { Express, Request, Response } from 'express';
-import bodyParser from 'body-parser';
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
-import identifyRoute from './routes/identify';
+import express, { Express, Request, Response } from "express";
+import bodyParser from "body-parser";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
+import identifyRoute from "./routes/identify";
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
@@ -10,33 +10,33 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 const options = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'Bitespeed Identity Reconciliation API',
-            version: '1.0.0',
-            description: 'API for identifying and tracking customer contacts.',
-        },
-        servers: [
-            {
-                url: `http://localhost:${port}`,
-            },
-        ],
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Bitespeed Identity Reconciliation API",
+      version: "1.0.0",
+      description: "API for identifying and tracking customer contacts.",
     },
-    apis: ['./src/routes/*.ts'],
+    servers: [
+      {
+        url: `http://localhost:${port}`,
+      },
+    ],
+  },
+  apis: ["./src/routes/*.ts"],
 };
 
 const specs = swaggerJsdoc(options);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
-app.get('/', (req: Request, res: Response) => {
-    res.redirect('/api-docs');
+app.get("/", (req: Request, res: Response) => {
+  res.redirect("/api-docs");
 });
 
-app.use('/', identifyRoute);
+app.use("/", identifyRoute);
 
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+const server = app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
 
-export default app; 
+export { app, server };
