@@ -37,39 +37,68 @@ export class ContactService {
       return this.buildResponseFromContacts([newContact]);
     }
 
-    // We have existing contacts, let's figure out the primary
-    let primaryContact = await this.getPrimaryContact(matchingContacts);
+    // 1. Find all unique primary contact IDs associated with the matches, traversing up from any secondary contacts.
+    const allPrimaryContactIds = new Set<number>();
+    const contactsToTrace = [...matchingContacts];
+    const tracedIds = new Set<number>();
 
-    // Check if we need to merge two different primary contacts
-    const primaryContactsInMatch = [
-      ...new Set(
-        matchingContacts
-          .filter((c) => c.linkPrecedence === "primary")
-          .map((c) => c.id)
-      ),
-    ];
-    if (primaryContactsInMatch.length > 1) {
-      const allPrimaryContacts = await prisma.contact.findMany({
-        where: { id: { in: primaryContactsInMatch } },
-        orderBy: { createdAt: "asc" },
-      });
-      const oldestPrimary = allPrimaryContacts[0];
-      const otherPrimaryIds = allPrimaryContacts.slice(1).map((c) => c.id);
+    while (contactsToTrace.length > 0) {
+      const contact = contactsToTrace.pop()!;
+      if (tracedIds.has(contact.id)) continue;
+      tracedIds.add(contact.id);
 
-      // The newer primary contact and all its children should now point to the oldest primary
-      await prisma.contact.updateMany({
-        where: {
-          OR: [
-            { id: { in: otherPrimaryIds } },
-            { linkedId: { in: otherPrimaryIds } },
-          ],
-        },
-        data: {
-          linkedId: oldestPrimary.id,
-          linkPrecedence: "secondary",
-        },
-      });
-      primaryContact = oldestPrimary;
+      if (contact.linkPrecedence === "primary") {
+        allPrimaryContactIds.add(contact.id);
+      } else if (contact.linkedId) {
+        const parent = await prisma.contact.findUnique({
+          where: { id: contact.linkedId },
+        });
+        if (parent) {
+          contactsToTrace.push(parent);
+        }
+      }
+    }
+
+    // 2. Fetch all primary contacts, find the oldest, and determine the true primary.
+    const allPrimaryContacts = await prisma.contact.findMany({
+      where: { id: { in: Array.from(allPrimaryContactIds) } },
+      orderBy: { createdAt: "asc" },
+    });
+
+    let primaryContact: Contact;
+
+    if (allPrimaryContacts.length > 0) {
+      primaryContact = allPrimaryContacts[0];
+      const otherPrimaryIds = allPrimaryContacts.slice(1).map((p) => p.id);
+      if (otherPrimaryIds.length > 0) {
+        // We have other primary contacts that need to be demoted.
+        await prisma.contact.updateMany({
+          where: {
+            OR: [
+              { id: { in: otherPrimaryIds } },
+              { linkedId: { in: otherPrimaryIds } },
+            ],
+          },
+          data: {
+            linkedId: primaryContact.id,
+            linkPrecedence: "secondary",
+          },
+        });
+      }
+    } else {
+      // Fallback: This case can happen with inconsistent data (e.g., all matches are orphaned secondaries).
+      // We will select the oldest contact from the original matches and promote it if necessary.
+      const oldestMatchedContact = [...matchingContacts].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      )[0];
+      if (oldestMatchedContact.linkPrecedence !== "primary") {
+        primaryContact = await prisma.contact.update({
+          where: { id: oldestMatchedContact.id },
+          data: { linkPrecedence: "primary", linkedId: null },
+        });
+      } else {
+        primaryContact = oldestMatchedContact;
+      }
     }
 
     // Get all contacts related to our primary contact
@@ -80,10 +109,10 @@ export class ContactService {
     });
 
     const allEmails = new Set(
-      allRelatedContacts.map((c) => c.email).filter(Boolean)
+      allRelatedContacts.map((c) => c.email).filter(Boolean) as string[]
     );
     const allPhones = new Set(
-      allRelatedContacts.map((c) => c.phoneNumber).filter(Boolean)
+      allRelatedContacts.map((c) => c.phoneNumber).filter(Boolean) as string[]
     );
 
     const isNewEmail = email && !allEmails.has(email);
@@ -157,25 +186,32 @@ export class ContactService {
         (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
       )[0];
 
-    const emails = [
-      ...new Set(contacts.map((c) => c.email).filter(Boolean)),
-    ] as string[];
-    const phoneNumbers = [
-      ...new Set(contacts.map((c) => c.phoneNumber).filter(Boolean)),
-    ] as string[];
+    const emails: string[] = [];
+    const phoneNumbers: string[] = [];
 
-    // Ensure primary contact's info is first
-    const primaryEmail = primaryContact.email;
-    const primaryPhone = primaryContact.phoneNumber;
+    // Add primary contact's info first
+    if (primaryContact.email && !emails.includes(primaryContact.email)) {
+      emails.push(primaryContact.email);
+    }
+    if (
+      primaryContact.phoneNumber &&
+      !phoneNumbers.includes(primaryContact.phoneNumber)
+    ) {
+      phoneNumbers.push(primaryContact.phoneNumber);
+    }
 
-    const sortedEmails = [
-      primaryEmail,
-      ...emails.filter((e) => e !== primaryEmail),
-    ];
-    const sortedPhones = [
-      primaryPhone,
-      ...phoneNumbers.filter((p) => p !== primaryPhone),
-    ];
+    // Add secondary contacts' info
+    const secondaryContacts = contacts.filter(
+      (c) => c.id !== primaryContact.id
+    );
+    secondaryContacts.forEach((contact) => {
+      if (contact.email && !emails.includes(contact.email)) {
+        emails.push(contact.email);
+      }
+      if (contact.phoneNumber && !phoneNumbers.includes(contact.phoneNumber)) {
+        phoneNumbers.push(contact.phoneNumber);
+      }
+    });
 
     const secondaryContactIds = contacts
       .map((c) => c.id)
@@ -184,8 +220,8 @@ export class ContactService {
     return {
       contact: {
         primaryContactId: primaryContact.id,
-        emails: sortedEmails.filter(Boolean) as string[],
-        phoneNumbers: sortedPhones.filter(Boolean) as string[],
+        emails: emails,
+        phoneNumbers: phoneNumbers,
         secondaryContactIds: secondaryContactIds,
       },
     };

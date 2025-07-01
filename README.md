@@ -54,7 +54,7 @@ docker-compose up -d
 Apply the database schema to the running database:
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev 
 ```
 
 ### 6. Run the application
@@ -92,4 +92,16 @@ curl -X POST 'YOUR_HOSTED_URL/identify' \
     "email": "mcfly@hillvalley.edu",
     "phoneNumber": "123456"
 }'
-``` 
+```
+
+## Running Tests
+
+This repository contains a comprehensive Jest test-suite that covers both unit and integration scenarios.
+
+| Command                    | Description                                              |
+| -------------------------- | -------------------------------------------------------- |
+| `npm run test`             | Run **all** tests once (unit & integration)              |
+| `npm run test:unit`        | Run only the unit tests under `tests/unit`               |
+| `npm run test:integration` | Run only the integration tests under `tests/integration` |
+| `npm run test:watch`       | Watch files and re-run relevant tests on change          |
+| `npm run test:coverage`    | Generate coverage report in `./coverage`                 |
