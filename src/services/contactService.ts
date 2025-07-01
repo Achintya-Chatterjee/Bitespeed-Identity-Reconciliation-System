@@ -1,4 +1,4 @@
-import { PrismaClient, Contact, LinkPrecedence } from "@prisma/client";
+import { PrismaClient, Contact } from "@prisma/client";
 import { IdentifyResponse } from "../types/identify";
 
 const prisma = new PrismaClient();
@@ -51,13 +51,10 @@ export class ContactService {
     if (primaryContactsInMatch.length > 1) {
       const allPrimaryContacts = await prisma.contact.findMany({
         where: { id: { in: primaryContactsInMatch } },
+        orderBy: { createdAt: "asc" },
       });
-      const oldestPrimary = allPrimaryContacts.sort(
-        (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-      )[0];
-      const otherPrimaryIds = allPrimaryContacts
-        .filter((c) => c.id !== oldestPrimary.id)
-        .map((c) => c.id);
+      const oldestPrimary = allPrimaryContacts[0];
+      const otherPrimaryIds = allPrimaryContacts.slice(1).map((c) => c.id);
 
       // The newer primary contact and all its children should now point to the oldest primary
       await prisma.contact.updateMany({
