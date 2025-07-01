@@ -14,7 +14,7 @@
     "test:coverage": "jest --coverage"
   },
   "keywords": [],
-  "author": "",
+  "author": "Achintya-Chatterjee",
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.11.0",

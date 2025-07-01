@@ -11,7 +11,8 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-const swaggerServerUrl = process.env.NODE_ENV === "production"
+const swaggerServerUrl =
+  process.env.NODE_ENV === "production"
     ? "https://bitespeed-identity-api-d81d.onrender.com"
     : `http://localhost:${port}`;
 
