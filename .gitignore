@@ -6,12 +6,20 @@
 
 # Env
 .env
+.env.test
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Test coverage
+/coverage
+*.lcov
+
+# Jest
+jest.config.local.js
 
 # Misc
 .DS_Store
