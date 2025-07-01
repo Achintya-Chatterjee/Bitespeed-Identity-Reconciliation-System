@@ -54,7 +54,7 @@ docker-compose up -d
 Apply the database schema to the running database:
 
 ```bash
-npx prisma migrate dev 
+npx prisma migrate dev
 ```
 
 ### 6. Run the application
@@ -79,14 +79,14 @@ This UI allows you to inspect the `/identify` endpoint and make test requests di
 
 The live service is hosted at the following URL:
 
-`[Link to your hosted Render/Heroku/etc. endpoint]`
+https://bitespeed-identity-api-d81d.onrender.com
 
 You can send `POST` requests to the `/identify` endpoint on the hosted service.
 
 **Example using cURL:**
 
 ```bash
-curl -X POST 'YOUR_HOSTED_URL/identify' \
+curl -X POST 'https://bitespeed-identity-api-d81d.onrender.com/identify' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "email": "mcfly@hillvalley.edu",
