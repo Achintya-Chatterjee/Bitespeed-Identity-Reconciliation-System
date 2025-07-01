@@ -3,11 +3,17 @@ import bodyParser from "body-parser";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import identifyRoute from "./routes/identify";
+import cors from "cors";
 
 const app: Express = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(bodyParser.json());
+
+const swaggerServerUrl = process.env.NODE_ENV === "production"
+    ? "https://bitespeed-identity-api-d81d.onrender.com"
+    : `http://localhost:${port}`;
 
 const options = {
   definition: {
@@ -19,7 +25,7 @@ const options = {
     },
     servers: [
       {
-        url: `http://localhost:${port}`,
+        url: swaggerServerUrl,
       },
     ],
   },
